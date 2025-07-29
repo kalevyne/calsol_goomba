@@ -5,10 +5,12 @@ const { App } = require('@slack/bolt');
 const app = new App({
   token: process.env.SLACK_BOT_TOKEN,
   signingSecret: process.env.SLACK_SIGNING_SECRET,
+  endpoints: '/slack/events'
 });
 
 // Slash command handler
 app.command('/joingroup', async ({ command, ack, respond }) => {
+  console.log("Received slash command:", command);
   await ack();
 
   const usergroupHandle = command.text.trim();
