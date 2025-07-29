@@ -28,14 +28,21 @@ app.command('/joingroup', async ({ command, ack, respond }) => {
       return respond(`User group ${usergroupHandle} not found.`);
     }
 
-    // Add user to group
-    const currentMembers = targetGroup.users || [];
+
+    // Fetch current members of the target group
+    const currentMembersRes = await app.client.usergroups.users.list({
+    token: process.env.SLACK_BOT_TOKEN,
+    usergroup: targetGroup.id,
+    });
+
+    const currentMembers = currentMembersRes.users || [];
     const newMembers = [...new Set([...currentMembers, command.user_id])];
 
+    // Update user group members
     await app.client.usergroups.users.update({
-      token: process.env.SLACK_BOT_TOKEN,
-      usergroup: targetGroup.id,
-      users: newMembers.join(','),
+    token: process.env.SLACK_BOT_TOKEN,
+    usergroup: targetGroup.id,
+    users: newMembers.join(','),
     });
 
     await respond(`You have been added to ${usergroupHandle}!`);
