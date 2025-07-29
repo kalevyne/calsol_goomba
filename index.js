@@ -5,7 +5,10 @@ const { App } = require('@slack/bolt');
 const app = new App({
   token: process.env.SLACK_BOT_TOKEN,
   signingSecret: process.env.SLACK_SIGNING_SECRET,
-  endpoints: '/slack/events'
+  // ⚠️ Only set endpoints if you *actually* want to change the path!
+  // The default is "/slack/events", which is fine for slash commands.
+  // Remove this line entirely if you want default behavior:
+  // endpoints: '/slack/events'
 });
 
 // Slash command handler
@@ -20,8 +23,8 @@ app.command('/joingroup', async ({ command, ack, respond }) => {
   }
 
   try {
-    // Fetch usergroups to find matching one by handle
-    const usergroupsRes = await app.client.usergroups.list({ token: process.env.SLACK_BOT_TOKEN });
+    // Fetch usergroups
+    const usergroupsRes = await app.client.usergroups.list();
     const targetGroup = usergroupsRes.usergroups.find(
       (ug) => ug.handle === usergroupHandle.replace(/^\./, '')
     );
@@ -30,21 +33,18 @@ app.command('/joingroup', async ({ command, ack, respond }) => {
       return respond(`User group ${usergroupHandle} not found.`);
     }
 
-
-    // Fetch current members of the target group
+    // Fetch current members
     const currentMembersRes = await app.client.usergroups.users.list({
-    token: process.env.SLACK_BOT_TOKEN,
-    usergroup: targetGroup.id,
+      usergroup: targetGroup.id,
     });
 
     const currentMembers = currentMembersRes.users || [];
     const newMembers = [...new Set([...currentMembers, command.user_id])];
 
-    // Update user group members
+    // Update user group
     await app.client.usergroups.users.update({
-    token: process.env.SLACK_BOT_TOKEN,
-    usergroup: targetGroup.id,
-    users: newMembers.join(','),
+      usergroup: targetGroup.id,
+      users: newMembers.join(','),
     });
 
     await respond(`You have been added to ${usergroupHandle}!`);
@@ -56,6 +56,7 @@ app.command('/joingroup', async ({ command, ack, respond }) => {
 
 // Start the app
 (async () => {
-  await app.start(process.env.PORT || 3001);
-  console.log('⚡️ Slack Bolt app is running!');
+  const port = process.env.PORT || 3000;
+  await app.start(port);
+  console.log(`⚡️ Slack Bolt app is running on port ${port}!`);
 })();
